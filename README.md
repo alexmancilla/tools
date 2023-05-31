@@ -1,8 +1,7 @@
 # tools
 Simple tools for everyday in Python 
 
-## Audio
-
+## [Audio](https://github.com/alexmancilla/tools/tree/main/audio)
 ### Audio union
 Combine multiple audio files into a single file.
 
