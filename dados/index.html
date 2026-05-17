@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dados & Probabilidad</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --card: #16213e;
+      --accent: #e94560;
+      --accent2: #0f3460;
+      --gold: #ffd700;
+      --text: #e0e0e0;
+      --muted: #888;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--accent), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: .3rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: .95rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    /* Selector de cantidad */
+    .selector {
+      display: flex;
+      gap: .6rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .selector button {
+      background: var(--card);
+      border: 2px solid transparent;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: .55rem 1.3rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .selector button:hover {
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .selector button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(233,69,96,.4);
+    }
+
+    /* Panel de probabilidad */
+    .prob-panel {
+      background: var(--card);
+      border: 1px solid #ffffff10;
+      border-radius: var(--radius);
+      padding: 1rem 1.6rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      min-width: 320px;
+    }
+
+    .prob-label {
+      font-size: .8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: .3rem;
+    }
+
+    .prob-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .prob-desc {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-top: .3rem;
+    }
+
+    /* Botón tirar */
+    .roll-btn {
+      background: linear-gradient(135deg, var(--accent), #c1121f);
+      border: none;
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 700;
+      padding: .85rem 2.8rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .2s;
+      box-shadow: 0 4px 20px rgba(233,69,96,.35);
+      margin-bottom: 2rem;
+      letter-spacing: .5px;
+    }
+
+    .roll-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(233,69,96,.5);
+    }
+
+    .roll-btn:active:not(:disabled) { transform: scale(.97); }
+    .roll-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Resultado */
+    .result-banner {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 600px;
+      transition: all .3s;
+      opacity: 0;
+    }
+
+    .result-banner.show { opacity: 1; }
+
+    .result-banner.win {
+      background: linear-gradient(135deg, #1a472a, #2d6a4f);
+      color: #52b788;
+      border: 1px solid #52b78850;
+      box-shadow: 0 0 30px rgba(82,183,136,.25);
+    }
+
+    .result-banner.lose {
+      background: linear-gradient(135deg, #3b1414, #6b2020);
+      color: #e07070;
+      border: 1px solid #e0707050;
+    }
+
+    /* Grid de dados */
+    .dice-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .8rem;
+      justify-content: center;
+      max-width: 900px;
+      width: 100%;
+    }
+
+    /* Dado */
+    .die {
+      width: 64px;
+      height: 64px;
+      background: #fff;
+      border-radius: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      padding: 8px;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.6);
+      transition: transform .1s;
+      position: relative;
+    }
+
+    .die.rolling {
+      animation: shake .5s ease-in-out;
+    }
+
+    .die.match {
+      box-shadow: 0 0 18px rgba(255,215,0,.7), 0 4px 12px rgba(0,0,0,.4);
+      outline: 2px solid var(--gold);
+    }
+
+    .die.nomatch {
+      opacity: .55;
+    }
+
+    @keyframes shake {
+      0%   { transform: rotate(0deg) scale(1); }
+      15%  { transform: rotate(-18deg) scale(1.08); }
+      30%  { transform: rotate(20deg) scale(.95); }
+      45%  { transform: rotate(-12deg) scale(1.05); }
+      60%  { transform: rotate(15deg) scale(.97); }
+      75%  { transform: rotate(-8deg) scale(1.02); }
+      90%  { transform: rotate(5deg) scale(1); }
+      100% { transform: rotate(0deg) scale(1); }
+    }
+
+    .dot {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #1a1a2e;
+    }
+
+    .dot.hidden { background: transparent; }
+
+    /* Stats historial */
+    .stats {
+      margin-top: 2.5rem;
+      background: var(--card);
+      border: 1px solid #ffffff10;
+      border-radius: var(--radius);
+      padding: 1.2rem 1.8rem;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .stats h3 {
+      font-size: .85rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 1rem;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: .92rem;
+      padding: .35rem 0;
+      border-bottom: 1px solid #ffffff08;
+    }
+
+    .stat-row:last-child { border-bottom: none; }
+
+    .stat-val { font-weight: 700; color: var(--gold); }
+
+    /* Responsive pequeño */
+    @media (max-width: 480px) {
+      .die { width: 52px; height: 52px; padding: 6px; gap: 3px; }
+      h1 { font-size: 1.7rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Dados &amp; Probabilidad</h1>
+  <p class="subtitle">¿Cuántos dados pueden salir iguales? Descubre cuán raro es.</p>
+
+  <!-- Selector de cantidad -->
+  <div class="selector">
+    <button onclick="setCount(1)" id="btn-1">1 dado</button>
+    <button onclick="setCount(2)" id="btn-2">2 dados</button>
+    <button onclick="setCount(5)" id="btn-5">5 dados</button>
+    <button onclick="setCount(10)" id="btn-10">10 dados</button>
+    <button onclick="setCount(100)" id="btn-100">100 dados</button>
+  </div>
+
+  <!-- Probabilidad -->
+  <div class="prob-panel">
+    <div class="prob-label">Probabilidad de que todos sean iguales</div>
+    <div class="prob-value" id="prob-val">100%</div>
+    <div class="prob-desc" id="prob-desc">Con 1 dado siempre "coinciden"</div>
+  </div>
+
+  <!-- Botón -->
+  <button class="roll-btn" id="rollBtn" onclick="roll()">🎲 Tirar dados</button>
+
+  <!-- Resultado -->
+  <div class="result-banner" id="result"></div>
+
+  <!-- Dados -->
+  <div class="dice-grid" id="diceGrid"></div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <h3>Historial de lanzamientos</h3>
+    <div class="stat-row"><span>Lanzamientos</span><span class="stat-val" id="s-total">0</span></div>
+    <div class="stat-row"><span>Todos iguales</span><span class="stat-val" id="s-wins">0</span></div>
+    <div class="stat-row"><span>Tasa real</span><span class="stat-val" id="s-rate">—</span></div>
+  </div>
+
+<script>
+  /* ── Estado ── */
+  let count = 1;
+  let rolling = false;
+  let stats = { total: 0, wins: 0 };
+
+  /* Disposición de puntos para cada cara (1-6) */
+  const LAYOUTS = {
+    1: [
+      [0,0,0],
+      [0,1,0],
+      [0,0,0],
+    ],
+    2: [
+      [1,0,0],
+      [0,0,0],
+      [0,0,1],
+    ],
+    3: [
+      [1,0,0],
+      [0,1,0],
+      [0,0,1],
+    ],
+    4: [
+      [1,0,1],
+      [0,0,0],
+      [1,0,1],
+    ],
+    5: [
+      [1,0,1],
+      [0,1,0],
+      [1,0,1],
+    ],
+    6: [
+      [1,0,1],
+      [1,0,1],
+      [1,0,1],
+    ],
+  };
+
+  function makeDie(value, idx) {
+    const die = document.createElement('div');
+    die.className = 'die';
+    die.id = `die-${idx}`;
+    const layout = LAYOUTS[value];
+    layout.forEach(row => {
+      row.forEach(on => {
+        const dot = document.createElement('div');
+        dot.className = on ? 'dot' : 'dot hidden';
+        die.appendChild(dot);
+      });
+    });
+    return die;
+  }
+
+  function renderDice(values) {
+    const grid = document.getElementById('diceGrid');
+    grid.innerHTML = '';
+    values.forEach((v, i) => grid.appendChild(makeDie(v, i)));
+  }
+
+  function setCount(n) {
+    count = n;
+    stats = { total: 0, wins: 0 };
+    updateStats();
+
+    document.querySelectorAll('.selector button').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn-${n}`).classList.add('active');
+
+    updateProb();
+
+    // Mostrar dados en espera con valor 1
+    const initial = Array.from({ length: n }, () => Math.ceil(Math.random() * 6));
+    renderDice(initial);
+
+    // Limpiar resultado
+    const res = document.getElementById('result');
+    res.className = 'result-banner';
+    res.textContent = '';
+  }
+
+  function probability(n) {
+    // P = 6 * (1/6)^n = (1/6)^(n-1)
+    if (n === 1) return 1;
+    return Math.pow(1 / 6, n - 1);
+  }
+
+  function updateProb() {
+    const p = probability(count);
+    const pct = p < 0.0001
+      ? p.toExponential(2)
+      : (p * 100).toFixed(count <= 1 ? 0 : count <= 2 ? 2 : 4) + '%';
+
+    document.getElementById('prob-val').textContent = count === 1 ? '100%' : pct;
+
+    const descs = {
+      1: 'Con 1 dado siempre "coinciden".',
+      2: 'Probabilidad de 1 en 6 (~16.7%).',
+      5: 'Probabilidad de 1 en 1,296 (~0.077%).',
+      10: 'Probabilidad de 1 en ~10 millones.',
+      100: 'Prácticamente imposible: 1 en 6⁹⁹.',
+    };
+    document.getElementById('prob-desc').textContent = descs[count] || '';
+  }
+
+  function updateStats() {
+    document.getElementById('s-total').textContent = stats.total;
+    document.getElementById('s-wins').textContent = stats.wins;
+    if (stats.total === 0) {
+      document.getElementById('s-rate').textContent = '—';
+    } else {
+      const rate = ((stats.wins / stats.total) * 100).toFixed(2);
+      document.getElementById('s-rate').textContent = `${rate}%`;
+    }
+  }
+
+  async function roll() {
+    if (rolling) return;
+    rolling = true;
+    document.getElementById('rollBtn').disabled = true;
+
+    const grid = document.getElementById('diceGrid');
+
+    // Limpiar resultado anterior
+    const res = document.getElementById('result');
+    res.className = 'result-banner';
+    res.textContent = '';
+
+    // Quitar clases match/nomatch previas
+    grid.querySelectorAll('.die').forEach(d => {
+      d.classList.remove('match', 'nomatch', 'rolling');
+    });
+
+    // Animar: mostrar dados cambiando rápidamente durante 600ms
+    const ANIM_DURATION = 600;
+    const INTERVAL = 60;
+    const frames = Math.floor(ANIM_DURATION / INTERVAL);
+    let frame = 0;
+
+    // Añadir clase rolling a todos
+    grid.querySelectorAll('.die').forEach(d => d.classList.add('rolling'));
+
+    const ticker = setInterval(() => {
+      const tempVals = Array.from({ length: count }, () => Math.ceil(Math.random() * 6));
+      // Actualizar puntos sin re-render completo para que la animación shake no se reinicie
+      const dies = grid.querySelectorAll('.die');
+      dies.forEach((die, i) => {
+        updateDots(die, tempVals[i]);
+      });
+      frame++;
+      if (frame >= frames) clearInterval(ticker);
+    }, INTERVAL);
+
+    await new Promise(r => setTimeout(r, ANIM_DURATION + 80));
+
+    // Resultado final
+    const values = Array.from({ length: count }, () => Math.ceil(Math.random() * 6));
+    const allEqual = values.every(v => v === values[0]);
+
+    const dies = grid.querySelectorAll('.die');
+    dies.forEach((die, i) => {
+      die.classList.remove('rolling');
+      updateDots(die, values[i]);
+      if (allEqual) {
+        die.classList.add('match');
+      } else {
+        die.classList.add(values[i] === values[0] ? 'match' : 'nomatch');
+      }
+    });
+
+    stats.total++;
+    if (allEqual) stats.wins++;
+    updateStats();
+
+    // Mostrar banner
+    res.classList.add('show');
+    if (allEqual) {
+      res.classList.add('win');
+      res.textContent = count === 1
+        ? '🎲 ¡Lanzado! (Con 1 dado siempre es "igual")'
+        : `🏆 ¡INCREÍBLE! Todos los ${count} dados salieron ${values[0]} — ¡Ganaste!`;
+    } else {
+      res.classList.add('lose');
+      const freq = {};
+      values.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
+      const mode = Object.entries(freq).sort((a,b) => b[1]-a[1])[0];
+      res.textContent = `❌ No coinciden — el ${mode[0]} apareció ${mode[1]} vez${mode[1]>1?'es':''} (máximo).`;
+    }
+
+    rolling = false;
+    document.getElementById('rollBtn').disabled = false;
+  }
+
+  function updateDots(dieEl, value) {
+    const dots = dieEl.querySelectorAll('.dot');
+    const layout = LAYOUTS[value];
+    let idx = 0;
+    layout.forEach(row => {
+      row.forEach(on => {
+        dots[idx].className = on ? 'dot' : 'dot hidden';
+        idx++;
+      });
+    });
+  }
+
+  /* Inicializar con 1 dado */
+  setCount(1);
+</script>
+</body>
+</html>
